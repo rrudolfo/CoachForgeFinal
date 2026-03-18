@@ -1,43 +1,114 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  FileText,
+  GraduationCap,
+  MessageSquare,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
 import { ContentCard } from "../components/ContentCard";
 import { LabelTag } from "../components/LabelTag";
-import { FileText, MessageSquare, GraduationCap } from "lucide-react";
+import { useEditor } from "../components/editor/EditorProvider";
+import { EditorActionButton } from "../components/editor/EditorActionButton";
+import { DeleteDialog } from "../components/editor/DeleteDialog";
+import { StandardItemDialog } from "../components/editor/StandardItemDialog";
+import { StandardsFamilyDialog } from "../components/editor/StandardsFamilyDialog";
+import {
+  createStandardItem,
+  createStandardsFamily,
+  deleteStandardItem,
+  deleteStandardsFamily,
+  listStandardsFamilies,
+  updateStandardItem,
+  updateStandardsFamily,
+} from "../../lib/standards";
+import { standardsFamiliesFallback } from "../../lib/content";
+import { StandardItem, StandardsFamily, StandardsIconKey } from "../../types/content";
 
-interface StandardProps {
-  name: string;
-  definition: string;
-  signals: string[];
-  sources: string[];
-  threshold: string;
-  risk: string;
+const familyIcons: Record<StandardsIconKey, typeof FileText | typeof MessageSquare | typeof GraduationCap> = {
+  "file-text": FileText,
+  "graduation-cap": GraduationCap,
+  "message-square": MessageSquare,
+};
+
+const familyColors = {
+  blue: "var(--color-cold-blue)",
+  pink: "var(--color-label-pink)",
+  red: "var(--color-sport-red)",
+  yellow: "var(--color-archive-yellow)",
+};
+
+function sortFamilies(families: StandardsFamily[]) {
+  return [...families]
+    .map((family) => ({
+      ...family,
+      standards: [...family.standards].sort(
+        (left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name),
+      ),
+    }))
+    .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name));
 }
 
-function StandardCard({ name, definition, signals, sources, threshold, risk }: StandardProps) {
+interface StandardCardProps {
+  canEdit: boolean;
+  editMode: boolean;
+  onDelete: (standard: StandardItem) => void;
+  onEdit: (standard: StandardItem) => void;
+  standard: StandardItem;
+}
+
+function StandardCard({ canEdit, editMode, onDelete, onEdit, standard }: StandardCardProps) {
   return (
-    <div 
+    <div
       className="p-5 border-2 mb-4"
-      style={{ 
-        backgroundColor: 'var(--color-paper-white)',
-        borderColor: 'var(--color-ink-black)' + '30'
+      style={{
+        backgroundColor: "var(--color-paper-white)",
+        borderColor: "rgb(11 8 15 / 0.18)",
       }}
     >
-      <h3 className="text-xl font-bold mb-3" style={{ fontFamily: 'var(--font-body)' }}>
-        {name}
-      </h3>
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <h3 className="text-xl font-bold" style={{ fontFamily: "var(--font-body)" }}>
+          {standard.name}
+        </h3>
+
+        {canEdit && editMode ? (
+          <div className="flex items-center gap-2 shrink-0">
+            <EditorActionButton
+              variant="ghost"
+              className="flex items-center gap-2"
+              onClick={() => onEdit(standard)}
+            >
+              <Pencil size={12} />
+              Edit
+            </EditorActionButton>
+            <EditorActionButton
+              variant="danger"
+              className="flex items-center gap-2"
+              onClick={() => onDelete(standard)}
+            >
+              <Trash2 size={12} />
+              Delete
+            </EditorActionButton>
+          </div>
+        ) : null}
+      </div>
 
       <div className="space-y-4">
         <div>
           <LabelTag>Definition</LabelTag>
-          <p className="text-sm mt-2 leading-relaxed" style={{ color: 'var(--color-ink-black)' }}>
-            {definition}
+          <p className="text-sm mt-2 leading-relaxed" style={{ color: "var(--color-ink-black)" }}>
+            {standard.definition}
           </p>
         </div>
 
         <div>
           <LabelTag variant="yellow">Observable Signals</LabelTag>
           <ul className="mt-2 space-y-1">
-            {signals.map((signal, idx) => (
-              <li key={idx} className="text-sm flex items-start gap-2">
-                <span style={{ color: 'var(--color-sport-red)' }}>•</span>
+            {standard.signals.map((signal, index) => (
+              <li key={`${standard.id}-signal-${index}`} className="text-sm flex items-start gap-2">
+                <span style={{ color: "var(--color-sport-red)" }}>•</span>
                 <span>{signal}</span>
               </li>
             ))}
@@ -48,8 +119,12 @@ function StandardCard({ name, definition, signals, sources, threshold, risk }: S
           <div>
             <LabelTag>Measurement Sources</LabelTag>
             <ul className="mt-2 space-y-1">
-              {sources.map((source, idx) => (
-                <li key={idx} className="text-xs" style={{ color: 'var(--color-ink-black)' + 'DD' }}>
+              {standard.sources.map((source, index) => (
+                <li
+                  key={`${standard.id}-source-${index}`}
+                  className="text-xs"
+                  style={{ color: "rgb(11 8 15 / 0.87)" }}
+                >
                   → {source}
                 </li>
               ))}
@@ -58,22 +133,22 @@ function StandardCard({ name, definition, signals, sources, threshold, risk }: S
 
           <div>
             <LabelTag variant="red">Threshold / Watchout</LabelTag>
-            <p className="text-xs mt-2" style={{ color: 'var(--color-ink-black)' + 'DD' }}>
-              {threshold}
+            <p className="text-xs mt-2" style={{ color: "rgb(11 8 15 / 0.87)" }}>
+              {standard.threshold}
             </p>
           </div>
         </div>
 
-        <div 
+        <div
           className="p-3 border-l-4"
-          style={{ 
-            borderLeftColor: 'var(--color-sport-red)',
-            backgroundColor: 'var(--color-warm-paper)'
+          style={{
+            borderLeftColor: "var(--color-sport-red)",
+            backgroundColor: "var(--color-warm-paper)",
           }}
         >
           <p className="text-xs font-bold uppercase tracking-wide mb-1">Risk if Absent</p>
-          <p className="text-sm" style={{ color: 'var(--color-ink-black)' }}>
-            {risk}
+          <p className="text-sm" style={{ color: "var(--color-ink-black)" }}>
+            {standard.risk}
           </p>
         </div>
       </div>
@@ -82,242 +157,362 @@ function StandardCard({ name, definition, signals, sources, threshold, risk }: S
 }
 
 export function StandardsLibrary() {
-  const families = [
-    {
-      name: "How People Work",
-      icon: FileText,
-      color: 'var(--color-cold-blue)',
-      standards: [
-        {
-          name: "Industriousness",
-          definition: "Consistent effort applied to fundamental tasks without prompting. Work is initiated, sustained, and completed with visible momentum.",
-          signals: [
-            "Tasks started without waiting for reminders",
-            "Sustained focus on core work during designated blocks",
-            "Work artifacts show progression over time",
-          ],
-          sources: ["Time logs", "Task records", "Planning docs"],
-          threshold: "If less than 70% of planned work shows active progress weekly",
-          risk: "Stagnation, missed deadlines, dependency on external pressure to move work forward",
-        },
-        {
-          name: "Initiative",
-          definition: "Proactive identification and pursuit of opportunities or solutions before being asked.",
-          signals: [
-            "Problems surfaced before they escalate",
-            "Improvements suggested without formal prompts",
-            "Gaps in process or knowledge addressed independently",
-          ],
-          sources: ["Chat messages", "Meeting transcripts", "Task creation logs"],
-          threshold: "If no proactive contributions noted for 2+ weeks",
-          risk: "Reactive culture, missed opportunities, dependence on leadership for all direction",
-        },
-        {
-          name: "Cooperation",
-          definition: "Active collaboration with teammates, including shared work, responsive communication, and willingness to help.",
-          signals: [
-            "Timely responses to requests for input or assistance",
-            "Joint work sessions or pair activities",
-            "Visible support for others' efforts",
-          ],
-          sources: ["Meeting attendance", "Collaboration tool activity", "Observation checklists"],
-          threshold: "If collaboration signals drop below 50% of baseline",
-          risk: "Siloed work, duplication of effort, interpersonal friction",
-        },
-        {
-          name: "Planning",
-          definition: "Structured preparation and forecasting before execution. Work is decomposed, sequenced, and resource-mapped.",
-          signals: [
-            "Tasks broken down before starting",
-            "Dependencies identified and documented",
-            "Time estimates provided and revisited",
-          ],
-          sources: ["Planning docs", "Task records", "Retrospective notes"],
-          threshold: "If planning artifacts absent for major work streams",
-          risk: "Chaos, thrashing, last-minute scrambles, hidden blockers",
-        },
-        {
-          name: "Core Skill Practice",
-          definition: "Deliberate practice of fundamental skills outside of high-pressure delivery contexts.",
-          signals: [
-            "Practice sessions scheduled and completed",
-            "Skill-building activities documented",
-            "Fundamentals referenced in team discussions",
-          ],
-          sources: ["Time logs", "Learning records", "Observation checklists"],
-          threshold: "If fewer than 2 practice sessions per month",
-          risk: "Skill erosion, reliance on luck instead of capability, brittleness under pressure",
-        },
-        {
-          name: "Enthusiasm",
-          definition: "Visible energy and positive engagement with work and teammates.",
-          signals: [
-            "Active participation in discussions",
-            "Positive language in communication",
-            "Volunteering for challenges or learning opportunities",
-          ],
-          sources: ["Meeting transcripts", "Chat tone analysis", "Observation notes"],
-          threshold: "If engagement signals decline for 3+ consecutive observations",
-          risk: "Disengagement, low morale, talent attrition",
-        },
-      ],
-    },
-    {
-      name: "How People Talk",
-      icon: MessageSquare,
-      color: 'var(--color-sport-red)',
-      standards: [
-        {
-          name: "Asking Questions",
-          definition: "Seeking clarity, challenging assumptions, and surfacing unknowns through active inquiry.",
-          signals: [
-            "Questions asked in meetings or chat",
-            "Clarifying language used before decisions",
-            "Assumptions questioned or tested",
-          ],
-          sources: ["Meeting transcripts", "Chat logs", "Decision records"],
-          threshold: "If question frequency drops below 3 per team discussion",
-          risk: "False consensus, hidden confusion, poor decision quality",
-        },
-        {
-          name: "Sharing Unique Information",
-          definition: "Contributing specialized knowledge, context, or perspective that others may not have.",
-          signals: [
-            "Unique data or insights introduced to discussions",
-            "Domain expertise referenced and explained",
-            "Diverse viewpoints acknowledged",
-          ],
-          sources: ["Meeting transcripts", "Documentation contributions", "Discussion threads"],
-          threshold: "If fewer than 50% of team members contribute unique info weekly",
-          risk: "Groupthink, blind spots, suboptimal solutions",
-        },
-        {
-          name: "Problem-Focused Discussion",
-          definition: "Conversations centered on solving specific challenges rather than blame or distraction.",
-          signals: [
-            "Root causes explored in discussions",
-            "Solution proposals offered and debated",
-            "Blame language absent or corrected",
-          ],
-          sources: ["Meeting transcripts", "Retrospective notes", "Chat threads"],
-          threshold: "If problem-solving tone drops below 60% in team meetings",
-          risk: "Defensiveness, unresolved issues, culture of blame",
-        },
-      ],
-    },
-    {
-      name: "How People Learn",
-      icon: GraduationCap,
-      color: 'var(--color-archive-yellow)',
-      standards: [
-        {
-          name: "Seeking Feedback",
-          definition: "Actively requesting input, critique, or guidance on work in progress.",
-          signals: [
-            "Feedback explicitly requested",
-            "Work shared before completion for review",
-            "Critiques welcomed and integrated",
-          ],
-          sources: ["Meeting transcripts", "Code/doc review requests", "Chat logs"],
-          threshold: "If fewer than 2 feedback requests per team member per sprint",
-          risk: "Wasted effort, misaligned work, slow improvement",
-        },
-        {
-          name: "Requesting Help",
-          definition: "Asking for assistance when stuck, rather than suffering in silence or failing independently.",
-          signals: [
-            "Help requests posted in team channels",
-            "Blockers escalated promptly",
-            "Pairing or collaboration initiated when struggling",
-          ],
-          sources: ["Chat logs", "Standup notes", "Task updates"],
-          threshold: "If no help requests for 2+ weeks despite known challenges",
-          risk: "Hidden struggle, burnout, preventable failures",
-        },
-        {
-          name: "Reporting Errors",
-          definition: "Transparently acknowledging mistakes, near-misses, or failures for team learning.",
-          signals: [
-            "Errors disclosed publicly",
-            "Incident reports filed",
-            "Lessons shared from mistakes",
-          ],
-          sources: ["Incident logs", "Retrospectives", "Team channels"],
-          threshold: "If error reporting drops to zero for extended periods (unlikely to be real)",
-          risk: "Cover-up culture, repeated mistakes, eroded trust",
-        },
-      ],
-    },
-  ];
+  const { canEdit, editMode } = useEditor();
+  const [deleteFamilyTarget, setDeleteFamilyTarget] = useState<StandardsFamily | null>(null);
+  const [deleteStandardTarget, setDeleteStandardTarget] = useState<StandardItem | null>(null);
+  const [familyDialogOpen, setFamilyDialogOpen] = useState(false);
+  const [families, setFamilies] = useState<StandardsFamily[]>(standardsFamiliesFallback);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedFamily, setSelectedFamily] = useState<StandardsFamily | null>(null);
+  const [selectedStandard, setSelectedStandard] = useState<StandardItem | null>(null);
+  const [standardDialogFamilyId, setStandardDialogFamilyId] = useState<string>("");
+  const [standardDialogOpen, setStandardDialogOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    setIsLoading(true);
+
+    listStandardsFamilies()
+      .then((data) => {
+        if (active) {
+          setFamilies(sortFamilies(data));
+        }
+      })
+      .catch((error) => {
+        toast.error(error instanceof Error ? error.message : "Unable to load standards.");
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const orderedFamilies = useMemo(() => sortFamilies(families), [families]);
+
+  async function handleSaveFamily(
+    value: StandardsFamily | Omit<StandardsFamily, "id" | "standards">,
+  ) {
+    try {
+      const savedFamily =
+        "id" in value ? await updateStandardsFamily(value) : await createStandardsFamily(value);
+
+      setFamilies((current) => {
+        const existingStandards =
+          current.find((family) => family.id === savedFamily.id)?.standards ?? savedFamily.standards;
+        const otherFamilies = current.filter((family) => family.id !== savedFamily.id);
+        return sortFamilies([...otherFamilies, { ...savedFamily, standards: existingStandards }]);
+      });
+
+      toast.success("Standards family saved.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save standards family.");
+      throw error;
+    }
+  }
+
+  async function handleSaveStandard(value: StandardItem | Omit<StandardItem, "id">) {
+    try {
+      const savedStandard =
+        "id" in value ? await updateStandardItem(value) : await createStandardItem(value);
+
+      setFamilies((current) =>
+        sortFamilies(
+          current.map((family) =>
+            family.id === savedStandard.familyId
+              ? {
+                  ...family,
+                  standards: [...family.standards.filter((standard) => standard.id !== savedStandard.id), savedStandard].sort(
+                    (left, right) =>
+                      left.sortOrder - right.sortOrder || left.name.localeCompare(right.name),
+                  ),
+                }
+              : family,
+          ),
+        ),
+      );
+
+      toast.success("Standard saved.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save standard.");
+      throw error;
+    }
+  }
+
+  async function handleDeleteFamily() {
+    if (!deleteFamilyTarget) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deleteStandardsFamily(deleteFamilyTarget.id);
+      setFamilies((current) => current.filter((family) => family.id !== deleteFamilyTarget.id));
+      setDeleteFamilyTarget(null);
+      toast.success("Standards family deleted.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete standards family.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  async function handleDeleteStandard() {
+    if (!deleteStandardTarget) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deleteStandardItem(deleteStandardTarget.id);
+      setFamilies((current) =>
+        current.map((family) =>
+          family.id === deleteStandardTarget.familyId
+            ? {
+                ...family,
+                standards: family.standards.filter((standard) => standard.id !== deleteStandardTarget.id),
+              }
+            : family,
+        ),
+      );
+      setDeleteStandardTarget(null);
+      toast.success("Standard deleted.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete standard.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen py-12" style={{ backgroundColor: 'var(--color-warm-paper)' }}>
+    <div className="min-h-screen py-12" style={{ backgroundColor: "var(--color-warm-paper)" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <LabelTag variant="red">Foundation</LabelTag>
-          <h1 
-            className="text-4xl md:text-5xl mt-4"
-            style={{ 
-              fontFamily: 'var(--font-display)',
-              color: 'var(--color-ink-black)'
-            }}
-          >
-            Standards Library
-          </h1>
-          <p className="text-lg mt-2" style={{ color: 'var(--color-ink-black)' + 'DD' }}>
-            Complete behavior taxonomy with observable signals, thresholds, and risks
-          </p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <LabelTag variant="red">Foundation</LabelTag>
+            <h1
+              className="text-4xl md:text-5xl mt-4"
+              style={{
+                fontFamily: "var(--font-display)",
+                color: "var(--color-ink-black)",
+              }}
+            >
+              Standards Library
+            </h1>
+            <p className="text-lg mt-2" style={{ color: "rgb(11 8 15 / 0.87)" }}>
+              Complete behavior taxonomy with observable signals, thresholds, and risks
+            </p>
+          </div>
+
+          {canEdit && editMode ? (
+            <EditorActionButton
+              className="flex items-center gap-2"
+              onClick={() => {
+                setSelectedFamily({
+                  color: "blue",
+                  description: "",
+                  icon: "file-text",
+                  id: "",
+                  name: "",
+                  sortOrder: families.length + 1,
+                  standards: [],
+                });
+                setFamilyDialogOpen(true);
+              }}
+            >
+              <Plus size={14} />
+              Add Family
+            </EditorActionButton>
+          ) : null}
         </div>
 
-        {/* Intro */}
         <ContentCard className="mb-12">
           <p className="text-sm leading-relaxed mb-4">
-            Culture is not what teams say. It's what they do. This library defines <strong>measurable behaviors</strong> 
-            that create healthy, high-performing teams. Each standard includes observable signals, measurement sources, 
-            watchout thresholds, and the risks that emerge when the behavior is absent.
+            Culture is not what teams say. It&apos;s what they do. This library defines{" "}
+            <strong>measurable behaviors</strong> that create healthy, high-performing teams. Each
+            standard includes observable signals, measurement sources, watchout thresholds, and the risks
+            that emerge when the behavior is absent.
           </p>
           <p className="text-sm leading-relaxed">
-            These standards are organized into three families: <strong>How People Work</strong>, <strong>How People Talk</strong>, 
-            and <strong>How People Learn</strong>. Together, they form the foundation of the Coach Forge operating system.
+            These standards are organized into three families: <strong>How People Work</strong>,{" "}
+            <strong>How People Talk</strong>, and <strong>How People Learn</strong>. Together, they form
+            the foundation of the Coach Forge operating system.
           </p>
         </ContentCard>
 
-        {/* Standards by Family */}
-        {families.map((family) => {
-          const Icon = family.icon;
-          return (
-            <section key={family.name} className="mb-12">
-              <div className="flex items-center gap-4 mb-6">
-                <div 
-                  className="w-16 h-16 flex items-center justify-center"
-                  style={{ backgroundColor: family.color }}
-                >
-                  <Icon className="text-white" size={32} />
-                </div>
-                <div>
-                  <LabelTag>{family.name}</LabelTag>
-                  <h2 
-                    className="text-3xl font-bold mt-2"
-                    style={{ 
-                      fontFamily: 'var(--font-display)',
-                      color: 'var(--color-ink-black)'
-                    }}
-                  >
-                    {family.name}
-                  </h2>
-                </div>
-              </div>
+        {isLoading ? (
+          <ContentCard>
+            <p className="text-sm">Loading standards library...</p>
+          </ContentCard>
+        ) : orderedFamilies.length === 0 ? (
+          <ContentCard>
+            <p className="text-sm">No standards families yet.</p>
+          </ContentCard>
+        ) : (
+          orderedFamilies.map((family) => {
+            const Icon = familyIcons[family.icon];
+            return (
+              <section key={family.id} className="mb-12">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-16 h-16 flex items-center justify-center"
+                      style={{ backgroundColor: familyColors[family.color] }}
+                    >
+                      <Icon className="text-white" size={32} />
+                    </div>
+                    <div>
+                      <LabelTag>{family.name}</LabelTag>
+                      <h2
+                        className="text-3xl font-bold mt-2"
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          color: "var(--color-ink-black)",
+                        }}
+                      >
+                        {family.name}
+                      </h2>
+                      {family.description ? (
+                        <p className="text-sm mt-2" style={{ color: "rgb(11 8 15 / 0.87)" }}>
+                          {family.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
 
-              <div className="space-y-4">
-                {family.standards.map((standard) => (
-                  <StandardCard key={standard.name} {...standard} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+                  {canEdit && editMode ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <EditorActionButton
+                        className="flex items-center gap-2"
+                        variant="ghost"
+                        onClick={() => {
+                          setStandardDialogFamilyId(family.id);
+                          setSelectedStandard({
+                            definition: "",
+                            familyId: family.id,
+                            id: "",
+                            name: "",
+                            risk: "",
+                            signals: [""],
+                            sortOrder: family.standards.length + 1,
+                            sources: [""],
+                            threshold: "",
+                          });
+                          setStandardDialogOpen(true);
+                        }}
+                      >
+                        <Plus size={12} />
+                        Add Standard
+                      </EditorActionButton>
+                      <EditorActionButton
+                        className="flex items-center gap-2"
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedFamily(family);
+                          setFamilyDialogOpen(true);
+                        }}
+                      >
+                        <Pencil size={12} />
+                        Edit Family
+                      </EditorActionButton>
+                      <EditorActionButton
+                        className="flex items-center gap-2"
+                        variant="danger"
+                        onClick={() => setDeleteFamilyTarget(family)}
+                      >
+                        <Trash2 size={12} />
+                        Delete Family
+                      </EditorActionButton>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="space-y-4">
+                  {family.standards.length === 0 ? (
+                    <ContentCard>
+                      <p className="text-sm">No standards in this family yet.</p>
+                    </ContentCard>
+                  ) : (
+                    family.standards.map((standard) => (
+                      <StandardCard
+                        key={standard.id}
+                        standard={standard}
+                        canEdit={canEdit}
+                        editMode={editMode}
+                        onEdit={(value) => {
+                          setSelectedStandard(value);
+                          setStandardDialogFamilyId(family.id);
+                          setStandardDialogOpen(true);
+                        }}
+                        onDelete={setDeleteStandardTarget}
+                      />
+                    ))
+                  )}
+                </div>
+              </section>
+            );
+          })
+        )}
       </div>
+
+      <StandardsFamilyDialog
+        open={familyDialogOpen}
+        onOpenChange={(open) => {
+          setFamilyDialogOpen(open);
+          if (!open) {
+            setSelectedFamily(null);
+          }
+        }}
+        initialValue={selectedFamily}
+        onSave={handleSaveFamily}
+      />
+
+      <StandardItemDialog
+        open={standardDialogOpen}
+        onOpenChange={(open) => {
+          setStandardDialogOpen(open);
+          if (!open) {
+            setSelectedStandard(null);
+          }
+        }}
+        familyId={standardDialogFamilyId}
+        initialValue={selectedStandard}
+        onSave={handleSaveStandard}
+      />
+
+      <DeleteDialog
+        open={Boolean(deleteFamilyTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteFamilyTarget(null);
+          }
+        }}
+        title="Delete Standards Family"
+        description={`Remove "${deleteFamilyTarget?.name ?? ""}" and all of its standards?`}
+        onConfirm={handleDeleteFamily}
+        isDeleting={isDeleting}
+      />
+
+      <DeleteDialog
+        open={Boolean(deleteStandardTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteStandardTarget(null);
+          }
+        }}
+        title="Delete Standard"
+        description={`Remove "${deleteStandardTarget?.name ?? ""}" from the library?`}
+        onConfirm={handleDeleteStandard}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
