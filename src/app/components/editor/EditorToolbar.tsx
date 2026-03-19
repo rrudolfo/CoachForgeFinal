@@ -15,7 +15,7 @@ export function EditorToolbar() {
     user,
   } = useEditor();
 
-  if (!hasSupabaseConfig || !authReady) {
+  if (!hasSupabaseConfig || !authReady || user) {
     return null;
   }
 

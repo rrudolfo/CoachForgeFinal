@@ -1,6 +1,8 @@
 import { Link, useLocation } from "react-router";
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, Pencil, X } from "lucide-react";
 import { useState } from "react";
+import { useEditor } from "./editor/EditorProvider";
+import { EditorActionButton } from "./editor/EditorActionButton";
 
 const navItems = [
   { name: "Home", path: "/" },
@@ -14,46 +16,124 @@ const navItems = [
 export function Navbar() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { canEdit, editMode, isCheckingAccess, setEditMode, signOut, user } = useEditor();
+
+  const logoSrc = `${import.meta.env.BASE_URL}coachforge-logo.png`;
+  const showDesktopEditorControls = Boolean(user) || isCheckingAccess;
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[var(--color-ink-black)]/10" style={{ backgroundColor: 'var(--color-paper-white)' }}>
-      <div className="max-w-7xl mx-auto px-[1px] py-[0px]">
-        <div className="flex items-center justify-between h-24">
-          {/* Left Zone: Logo Container */}
-          <Link to="/" className="flex items-center py-3">
-            <img 
-              src="/coachforge-logo.png" 
-              alt="Coach Forge - Forge Your Potential!" 
-              className="h-15 w-auto"
+    <nav
+      className="sticky top-0 z-50 border-b border-[var(--color-ink-black)]/10"
+      style={{ backgroundColor: "var(--color-paper-white)" }}
+    >
+      <div className="w-full px-6 lg:px-8">
+        <div className="flex items-center justify-between h-[108px]">
+          {/* Left Zone: Logo */}
+          <Link to="/" className="flex items-center shrink-0 mr-8 w-[420px] h-[110px]">
+            <img
+              src={logoSrc}
+              alt="Coach Forge - Forge Your Potential!"
+              className="block w-[420px] max-w-none object-contain object-left"
+              style={{
+                transform: "translate(-28px, -4px) scale(1.18)",
+                transformOrigin: "left center",
+              }}
             />
           </Link>
 
           {/* Right Zone: Desktop Navigation */}
-          <div className="hidden lg:flex items-center flex-1 justify-end gap-1 ml-12">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className="px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
-                  style={{
-                    fontFamily: 'var(--font-body)',
-                    color: isActive ? 'var(--color-sport-red)' : 'var(--color-ink-black)',
-                    borderBottom: isActive ? '2px solid var(--color-sport-red)' : '2px solid transparent',
-                  }}
+          <div className="hidden lg:flex items-center flex-1 justify-end gap-4 min-w-0">
+            <div className="flex items-center gap-3 xl:gap-5 min-w-0">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className="group relative px-2 xl:px-3 py-2 text-[15px] font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-200 ease-out"
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      color: isActive ? "var(--color-sport-red)" : "var(--color-ink-black)",
+                    }}
+                  >
+                    <span className="transition-colors duration-200 group-hover:text-[var(--color-sport-red)]">
+                      {item.name}
+                    </span>
+
+                    <span
+                      className="pointer-events-none absolute left-2 xl:left-3 right-2 xl:right-3 -bottom-[10px] h-[2px] origin-left transition-transform duration-200 ease-out"
+                      style={{
+                        backgroundColor: "var(--color-sport-red)",
+                        transform: isActive ? "scaleX(1)" : "scaleX(0)",
+                        opacity: isActive ? 1 : 0.75,
+                      }}
+                    />
+
+                    {!isActive && (
+                      <span
+                        className="pointer-events-none absolute left-2 xl:left-3 right-2 xl:right-3 -bottom-[10px] h-[2px] origin-left scale-x-0 transition-transform duration-200 ease-out group-hover:scale-x-100"
+                        style={{
+                          backgroundColor: "var(--color-sport-red)",
+                          opacity: 0.75,
+                        }}
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {showDesktopEditorControls && (
+              <div
+                className="flex items-center gap-2 border-l pl-4 shrink-0"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  borderColor: "var(--color-ink-black)20",
+                }}
+              >
+                <div
+                  className="text-[11px] font-bold uppercase tracking-[0.14em] whitespace-nowrap"
+                  style={{ color: "var(--color-ink-black)" }}
                 >
-                  {item.name}
-                </Link>
-              );
-            })}
+                  <span className="mr-2 inline-block align-middle">
+                    <Pencil size={14} />
+                  </span>
+                  {isCheckingAccess
+                    ? "Checking Editor Access"
+                    : canEdit
+                      ? editMode
+                        ? "Edit Mode On"
+                        : "Editor Ready"
+                      : "Signed In"}
+                </div>
+
+                {canEdit && (
+                  <EditorActionButton
+                    onClick={() => setEditMode(!editMode)}
+                    variant={editMode ? "default" : "ghost"}
+                  >
+                    {editMode ? "Disable Edit" : "Enable Edit"}
+                  </EditorActionButton>
+                )}
+
+                <EditorActionButton
+                  className="flex items-center gap-2"
+                  onClick={() => signOut()}
+                  variant="ghost"
+                >
+                  <LogOut size={14} />
+                  Sign Out
+                </EditorActionButton>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
           <button
             className="lg:hidden p-2"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            style={{ color: 'var(--color-ink-black)' }}
+            style={{ color: "var(--color-ink-black)" }}
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -61,18 +141,65 @@ export function Navbar() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="lg:hidden pb-4 border-t" style={{ borderColor: 'var(--color-ink-black)' + '20' }}>
+          <div
+            className="lg:hidden pb-4 border-t"
+            style={{ borderColor: "var(--color-ink-black)20" }}
+          >
+            {(Boolean(user) || isCheckingAccess) && (
+              <div
+                className="px-4 py-4 border-b"
+                style={{ borderColor: "var(--color-ink-black)20" }}
+              >
+                <div
+                  className="text-[11px] font-bold uppercase tracking-[0.14em]"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    color: "var(--color-ink-black)",
+                  }}
+                >
+                  {isCheckingAccess
+                    ? "Checking Editor Access"
+                    : canEdit
+                      ? editMode
+                        ? "Edit Mode On"
+                        : "Editor Ready"
+                      : "Signed In"}
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {canEdit && (
+                    <EditorActionButton
+                      onClick={() => setEditMode(!editMode)}
+                      variant={editMode ? "default" : "ghost"}
+                    >
+                      {editMode ? "Disable Edit" : "Enable Edit"}
+                    </EditorActionButton>
+                  )}
+
+                  <EditorActionButton
+                    className="flex items-center gap-2"
+                    onClick={() => signOut()}
+                    variant="ghost"
+                  >
+                    <LogOut size={14} />
+                    Sign Out
+                  </EditorActionButton>
+                </div>
+              </div>
+            )}
+
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
+
               return (
                 <Link
                   key={item.path}
                   to={item.path}
                   className="block px-4 py-3 text-sm font-bold uppercase tracking-wide"
                   style={{
-                    fontFamily: 'var(--font-body)',
-                    color: isActive ? 'var(--color-sport-red)' : 'var(--color-ink-black)',
-                    backgroundColor: isActive ? 'var(--color-warm-paper)' : 'transparent',
+                    fontFamily: "var(--font-body)",
+                    color: isActive ? "var(--color-sport-red)" : "var(--color-ink-black)",
+                    backgroundColor: isActive ? "var(--color-warm-paper)" : "transparent",
                   }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
