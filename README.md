@@ -71,8 +71,15 @@ To grant edit access, insert the editor's email into `public.editor_users`.
 
 - Public users can read all content.
 - Signed-in whitelisted users can enable Edit Mode.
+- On desktop, signed-in editor status and controls are shown in the navbar beneath the main nav tabs.
 - Editing is handled entirely from the client through Supabase Auth + RLS.
 - No service-role keys or custom backend runtime are used.
+
+## Editor UX Notes
+
+- Practical Tools, Standards Library, and Coach Playbook can be updated in place through lightweight modal dialogs.
+- The coach add/edit dialog uses an internal scroll area so long coach entries remain usable on smaller screens and laptops.
+- Route changes automatically reset scroll position to the top of the page.
 
 ## Routing and GitHub Pages
 

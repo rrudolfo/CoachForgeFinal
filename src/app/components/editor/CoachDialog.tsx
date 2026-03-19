@@ -79,7 +79,7 @@ export function CoachDialog({ initialValue, onOpenChange, onSave, open }: CoachD
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-4xl border-2 rounded-none"
+        className="max-h-[88vh] max-w-3xl overflow-hidden border-2 rounded-none"
         style={{
           borderColor: "var(--color-ink-black)",
           backgroundColor: "var(--color-paper-white)",
@@ -95,149 +95,150 @@ export function CoachDialog({ initialValue, onOpenChange, onSave, open }: CoachD
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="grid gap-4 md:grid-cols-[1fr_160px_140px]">
+        <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
+          <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+            <div className="grid gap-4 md:grid-cols-[1fr_160px_140px]">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-[0.14em]">Coach Name</label>
+                <Input
+                  value={formState.name}
+                  onChange={(event) => setFormState((current) => ({ ...current, name: event.target.value }))}
+                  className="rounded-none"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-[0.14em]">Accent Color</label>
+                <select
+                  value={formState.accentColor}
+                  onChange={(event) =>
+                    setFormState((current) => ({
+                      ...current,
+                      accentColor: event.target.value as CoachEntry["accentColor"],
+                    }))
+                  }
+                  className="flex h-9 w-full rounded-none border px-3 text-sm"
+                  style={{ borderColor: "var(--color-ink-black)", backgroundColor: "var(--color-paper-white)" }}
+                >
+                  <option value="blue">Blue</option>
+                  <option value="red">Red</option>
+                  <option value="yellow">Yellow</option>
+                  <option value="pink">Pink</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-[0.14em]">Sort Order</label>
+                <Input
+                  type="number"
+                  value={String(formState.sortOrder)}
+                  onChange={(event) =>
+                    setFormState((current) => ({
+                      ...current,
+                      sortOrder: Number(event.target.value) || 0,
+                    }))
+                  }
+                  className="rounded-none"
+                />
+              </div>
+            </div>
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-[0.14em]">Coach Name</label>
-              <Input
-                value={formState.name}
-                onChange={(event) => setFormState((current) => ({ ...current, name: event.target.value }))}
-                className="rounded-none"
+              <label className="block text-xs font-bold uppercase tracking-[0.14em]">Philosophy</label>
+              <Textarea
+                value={formState.philosophy}
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, philosophy: event.target.value }))
+                }
+                className="min-h-20 rounded-none"
                 required
               />
             </div>
+
+            <ObjectListEditor
+              label="Key Practices"
+              items={formState.practices}
+              onChange={(practices) => setFormState((current) => ({ ...current, practices }))}
+              addLabel="Add Practice"
+              createItem={createPractice}
+              fields={[
+                { key: "title", label: "Practice Title", placeholder: "Practice title" },
+                {
+                  key: "description",
+                  label: "Practice Description",
+                  multiline: true,
+                  placeholder: "Describe the practice",
+                },
+              ]}
+            />
+
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-[0.14em]">Accent Color</label>
-              <select
-                value={formState.accentColor}
+              <label className="block text-xs font-bold uppercase tracking-[0.14em]">Team / Org Context</label>
+              <Textarea
+                value={formState.teamApplication}
                 onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    accentColor: event.target.value as CoachEntry["accentColor"],
-                  }))
+                  setFormState((current) => ({ ...current, teamApplication: event.target.value }))
                 }
-                className="flex h-9 w-full rounded-none border px-3 text-sm"
-                style={{ borderColor: "var(--color-ink-black)", backgroundColor: "var(--color-paper-white)" }}
-              >
-                <option value="blue">Blue</option>
-                <option value="red">Red</option>
-                <option value="yellow">Yellow</option>
-                <option value="pink">Pink</option>
-              </select>
+                className="min-h-24 rounded-none"
+              />
             </div>
+
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-[0.14em]">Sort Order</label>
-              <Input
-                type="number"
-                value={String(formState.sortOrder)}
+              <label className="block text-xs font-bold uppercase tracking-[0.14em]">AI Support</label>
+              <Textarea
+                value={formState.aiSupport}
                 onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    sortOrder: Number(event.target.value) || 0,
-                  }))
+                  setFormState((current) => ({ ...current, aiSupport: event.target.value }))
                 }
-                className="rounded-none"
+                className="min-h-24 rounded-none"
+              />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-[0.14em]">Ritual Name</label>
+                <Input
+                  value={formState.ritualName}
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, ritualName: event.target.value }))
+                  }
+                  className="rounded-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-[0.14em]">Matrix Label</label>
+                <Input
+                  value={formState.matrixLabel}
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, matrixLabel: event.target.value }))
+                  }
+                  className="rounded-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-bold uppercase tracking-[0.14em]">Ritual Description</label>
+              <Textarea
+                value={formState.ritualDescription}
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, ritualDescription: event.target.value }))
+                }
+                className="min-h-24 rounded-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-bold uppercase tracking-[0.14em]">Matrix AI Support</label>
+              <Textarea
+                value={formState.matrixAiSupport}
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, matrixAiSupport: event.target.value }))
+                }
+                className="min-h-20 rounded-none"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-[0.14em]">Philosophy</label>
-            <Textarea
-              value={formState.philosophy}
-              onChange={(event) =>
-                setFormState((current) => ({ ...current, philosophy: event.target.value }))
-              }
-              className="rounded-none min-h-20"
-              required
-            />
-          </div>
-
-          <ObjectListEditor
-            label="Key Practices"
-            items={formState.practices}
-            onChange={(practices) => setFormState((current) => ({ ...current, practices }))}
-            addLabel="Add Practice"
-            createItem={createPractice}
-            fields={[
-              { key: "title", label: "Practice Title", placeholder: "Practice title" },
-              {
-                key: "description",
-                label: "Practice Description",
-                multiline: true,
-                placeholder: "Describe the practice",
-              },
-            ]}
-          />
-
-          <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-[0.14em]">Team / Org Context</label>
-            <Textarea
-              value={formState.teamApplication}
-              onChange={(event) =>
-                setFormState((current) => ({ ...current, teamApplication: event.target.value }))
-              }
-              className="rounded-none min-h-24"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-[0.14em]">AI Support</label>
-            <Textarea
-              value={formState.aiSupport}
-              onChange={(event) =>
-                setFormState((current) => ({ ...current, aiSupport: event.target.value }))
-              }
-              className="rounded-none min-h-24"
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-[0.14em]">Ritual Name</label>
-              <Input
-                value={formState.ritualName}
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, ritualName: event.target.value }))
-                }
-                className="rounded-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-[0.14em]">Matrix Label</label>
-              <Input
-                value={formState.matrixLabel}
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, matrixLabel: event.target.value }))
-                }
-                className="rounded-none"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-[0.14em]">Ritual Description</label>
-            <Textarea
-              value={formState.ritualDescription}
-              onChange={(event) =>
-                setFormState((current) => ({ ...current, ritualDescription: event.target.value }))
-              }
-              className="rounded-none min-h-24"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-[0.14em]">Matrix AI Support</label>
-            <Textarea
-              value={formState.matrixAiSupport}
-              onChange={(event) =>
-                setFormState((current) => ({ ...current, matrixAiSupport: event.target.value }))
-              }
-              className="rounded-none min-h-20"
-            />
-          </div>
-
-          <div className="flex justify-end">
+          <div className="mt-4 flex justify-end border-t pt-4" style={{ borderColor: "var(--color-ink-black)20" }}>
             <EditorActionButton disabled={isSaving} type="submit">
               {isSaving ? "Saving..." : "Save Coach"}
             </EditorActionButton>
