@@ -79,7 +79,7 @@ export function CoachDialog({ initialValue, onOpenChange, onSave, open }: CoachD
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[88vh] max-w-3xl overflow-hidden border-2 rounded-none"
+        className="max-h-[88vh] max-w-3xl grid-rows-[auto,minmax(0,1fr)] overflow-hidden border-2 rounded-none"
         style={{
           borderColor: "var(--color-ink-black)",
           backgroundColor: "var(--color-paper-white)",
@@ -96,7 +96,7 @@ export function CoachDialog({ initialValue, onOpenChange, onSave, open }: CoachD
         </DialogHeader>
 
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
-          <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-2">
             <div className="grid gap-4 md:grid-cols-[1fr_160px_140px]">
               <div className="space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-[0.14em]">Coach Name</label>
