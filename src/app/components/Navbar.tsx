@@ -42,8 +42,8 @@ export function Navbar() {
           </Link>
 
           {/* Right Zone: Desktop Navigation */}
-          <div className="hidden lg:flex items-center flex-1 justify-end gap-4 min-w-0">
-            <div className="flex items-center gap-3 xl:gap-5 min-w-0">
+          <div className="hidden lg:flex flex-1 flex-col items-end justify-center gap-2 min-w-0">
+            <div className="flex items-center gap-1.5 xl:gap-3 min-w-0">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path;
 
@@ -51,7 +51,7 @@ export function Navbar() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className="group relative px-2 xl:px-3 py-2 text-[15px] font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-200 ease-out"
+                    className="group relative px-1.5 xl:px-2.5 py-2 text-[15px] font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-200 ease-out"
                     style={{
                       fontFamily: "var(--font-body)",
                       color: isActive ? "var(--color-sport-red)" : "var(--color-ink-black)",
@@ -62,7 +62,7 @@ export function Navbar() {
                     </span>
 
                     <span
-                      className="pointer-events-none absolute left-2 xl:left-3 right-2 xl:right-3 -bottom-[10px] h-[2px] origin-left transition-transform duration-200 ease-out"
+                      className="pointer-events-none absolute left-1.5 xl:left-2.5 right-1.5 xl:right-2.5 -bottom-[10px] h-[2px] origin-left transition-transform duration-200 ease-out"
                       style={{
                         backgroundColor: "var(--color-sport-red)",
                         transform: isActive ? "scaleX(1)" : "scaleX(0)",
@@ -72,7 +72,7 @@ export function Navbar() {
 
                     {!isActive && (
                       <span
-                        className="pointer-events-none absolute left-2 xl:left-3 right-2 xl:right-3 -bottom-[10px] h-[2px] origin-left scale-x-0 transition-transform duration-200 ease-out group-hover:scale-x-100"
+                        className="pointer-events-none absolute left-1.5 xl:left-2.5 right-1.5 xl:right-2.5 -bottom-[10px] h-[2px] origin-left scale-x-0 transition-transform duration-200 ease-out group-hover:scale-x-100"
                         style={{
                           backgroundColor: "var(--color-sport-red)",
                           opacity: 0.75,
@@ -86,10 +86,9 @@ export function Navbar() {
 
             {showDesktopEditorControls && (
               <div
-                className="flex items-center gap-2 border-l pl-4 shrink-0"
+                className="flex items-center gap-2 shrink-0 pt-1"
                 style={{
                   fontFamily: "var(--font-body)",
-                  borderColor: "var(--color-ink-black)20",
                 }}
               >
                 <div
